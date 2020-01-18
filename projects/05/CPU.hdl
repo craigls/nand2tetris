@@ -25,10 +25,13 @@
  * than to the address resulting from executing the current instruction. 
  */
 
+// Spent hours on this one. Couldn't figure out the jump logic and had to look it up.
+// Also had ALU (x, y) reversed somehow, and was missing PC's inc pin.
+
 CHIP CPU {
 
     IN  inM[16],         // M value input  (M = contents of RAM[A])
-        instruction[16], // Instruction for execution
+        instruction[16], // Instruction for execution (ixxaccccccdddjjj)
         reset;           // Signals whether to re-start the current
                          // program (reset==1) or continue executing
                          // the current program (reset==0).
@@ -39,5 +42,67 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
+        /*
+         * instruction[15]      opcode
+         * instruction[13..14]  (not used)
+         * instruction[12]      A-bit
+         * instruction[6..11]   comp
+         * instruction[3..5]    dest 
+         * instruction[0..2]    jump
+         *
+         */
+        Not (in=instruction[15], out=notOp);
+        Mux16(a=ALUOut, b=instruction, sel=notOp, out=ARegIn);
+        DRegister(in=DRegIn, load=writeD, out=DRegOut);
+        ARegister(in=ARegIn, load=writeA, out=ARegOut, out[0..14]=addressM);
+        Mux16(b=inM, a=ARegOut, sel=instruction[12], out=muxOut);
+        ALU(y=muxOut, 
+            x=DRegOut, 
+            zx=instruction[11], 
+            nx=instruction[10], 
+            zy=instruction[9], 
+            ny=instruction[8], 
+            f=instruction[7], 
+            no=instruction[6], 
+            zr=zr, 
+            ng=ng,
+            out=DRegIn, 
+            out=ALUOut, 
+            out=outM
+        );
+
+        // dest logic
+        Or (a=notOp, b=instruction[5], out=writeA);
+        And (a=instruction[15], b=instruction[4], out=writeD);
+        And (a=instruction[15], b=instruction[3], out=writeM);
+
+        Or (a=zr, b=ng, out=zrOrNg);
+        Not (in=zrOrNg, out=pos);
+
+        // JEQ
+        And (a=instruction[1], b=zr, out=load1);
+
+        // JLT
+        And (a=instruction[2], b=ng, out=JLT);
+        And (a=JLT, b=ng, out=load2);
+
+        // JGT
+        And (a=instruction[0], b=pos, out=JGT);
+        And (a=JGT, b=pos, out=load3);
+
+        // JMP
+        And (a=instruction[0], b=instruction[1], out=j1j2);
+        And (a=j1j2, b=instruction[2], out=load6);
+
+        // Should we jump?
+        Or (a=load1, a=load2, out=load4);
+        Or (a=load3, b=load4, out=load5);
+        Or (a=load5, b=load6, out=load7); 
+        And (a=instruction[15], b=load7, out=load8);
+    
+        // Somehow I missed the inc pin and spent hours debugging.
+        PC (in=ARegOut, inc=true, reset=reset, load=load8, out[0..14]=pc);
+    
+        
     // Put your code here:
 }
