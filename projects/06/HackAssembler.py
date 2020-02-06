@@ -1,10 +1,11 @@
+#!/bin/python3
+
 # Hack assembler! 
 
 import sys
 import re
-import pprint
 
-RE_VALID_CHARS = re.compile(r'\s+')
+RE_INVALID_CHARS = re.compile(r'\s+')
 
 SYMBOLS = {
     'R0': 0,
@@ -87,7 +88,7 @@ def prepare(filedata):
     # Strip whitespace, remove comments, etc
     lines = []
     for line in filedata:
-        s = RE_VALID_CHARS.sub('', line.split('//')[0]).strip()
+        s = RE_INVALID_CHARS.sub('', line.split('//')[0]).strip()
         if s:
             lines.append(s)
     return lines
@@ -157,4 +158,4 @@ def assemble(data):
 
 if __name__ == '__main__':
     with open(sys.argv[1], 'r') as f:
-        print assemble(f.readlines())
+        print(assemble(f.readlines()))
