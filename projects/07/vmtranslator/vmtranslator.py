@@ -104,7 +104,7 @@ class CodeWriter:
         self.out = out or sys.stdout
         
     def write_comment(self, s):
-        self.write('// %s'.format(s))
+        self.write('// {}'.format(s))
 
     def write_command(self, c):
         self.write_comment(c.comment)
@@ -164,7 +164,6 @@ class CodeWriter:
         self.write('M=M+1')
 
     def segment_to_areg(self, segment, index):
-        self.write_comment('// push address of %s.%s to A'.format(segment, index))
         if segment == 'static':
             self.write('@{}.{}'.format(self.classname, index))
         else:
