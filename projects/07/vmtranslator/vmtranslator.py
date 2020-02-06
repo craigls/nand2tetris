@@ -244,59 +244,6 @@ class CodeWriter:
         self.write('A=M')
         self.write('M=D')
             
-    def arithmetic_(self, c):
-        if c.cmd == 'neg':
-            self.write('@SP')
-            self.write('A=M-1')
-            self.write('M=-M')
-
-        elif c.cmd == 'not':
-            self.write('@SP')
-            self.write('A=M-1')
-            self.write('M=!M')
-
-        else:
-            self.write('@SP')
-            self.write('M=M-1')
-            self.write('A=M')
-            self.write('D=M')
-            self.write('A=A-1')
-
-            if c.cmd in ('sub', 'eq', 'lt', 'gt'):
-                self.write('D=M-D')
-            elif c.cmd == 'add':
-                self.write('D=M+D')
-            elif c.cmd == 'and':
-                self.write('D=D&M')
-            elif c.cmd == 'or':
-                self.write('D=D|M')
-
-            # Operations that produce boolean values
-            # Note: true = -1 and false = 0 here
-            if c.cmd in ('eq', 'lt', 'gt'):
-                self.write('@BOOL_TRUE_{}'.format(self.index))
-                if c.cmd == 'eq':
-                    self.write('D;JEQ')
-                elif c.cmd == 'gt':
-                    self.write('D;JGT')
-                elif c.cmd == 'lt':
-                    self.write('D;JLT')
-                elif c.cmd == 'not':
-                    self.write('D;JNE')
-
-                self.write('(BOOL_FALSE_{})'.format(self.index))
-                self.write('D=0')
-                self.write('@BOOL_UPDATE_STACK_{}'.format(self.index))
-                self.write('0;JMP')
-                self.write('(BOOL_TRUE_{})'.format(self.index))
-                self.write('D=-1')
-                self.write('(BOOL_UPDATE_STACK_{})'.format(self.index))
-
-            # Push the D value onto A-1
-            self.write('@SP')
-            self.write('A=M-1')
-            self.write('M=D')
-
     def arithmetic(self, c):
         if c.cmd == 'neg':
             self.write('@SP')
