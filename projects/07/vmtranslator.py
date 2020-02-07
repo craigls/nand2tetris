@@ -55,9 +55,10 @@ class Command:
             self.arg2 = None
     
         # Build the comment string
-        self.comment = '// ' + debug 
+        if debug:
+            self.comment = '// ' + debug 
 
-    def __unicode__(self):
+    def __repr__(self):
         return "Command({}, arg1={}, arg2={}, type={}, comment={})".format(
             self.cmd, 
             self.arg1, 
@@ -65,6 +66,7 @@ class Command:
             self.type,
             self.comment,
         )
+
 
 class Parser:
     def __init__(self, lines):
