@@ -56,7 +56,7 @@ class Command:
     
         # Build the comment string
         if debug:
-            self.comment = '// ' + debug 
+            self.comment = debug 
 
     def __repr__(self):
         return "Command({}, arg1={}, arg2={}, type={}, comment={})".format(
