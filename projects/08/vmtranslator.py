@@ -34,6 +34,7 @@ RE_COMMENT_PATTERN = re.compile(r'//.*')
 
 MAIN_CLASSNAME = 'Main'
 
+
 class Command:
     def __init__(self, cmd, arg1=None, arg2=None, debug=''):
         self.cmd = cmd
@@ -96,6 +97,7 @@ class Parser:
             if tokens:
                 yield Command(*tokens, debug=cleaned)
 
+
 class CodeWriter:
     BASE_ADDRESSES = {
         'pointer': 3,
@@ -107,23 +109,22 @@ class CodeWriter:
         'that': 'THAT',
     }
 
-    def __init__(self, classname, out=None):
+    def __init__(self, classname=None, out=None):
         self.classname = classname
         self.command_index = 0
         self.return_label_index = 0
         self.out = out or sys.stdout
-        
-    def write_bootstrap(self):
-        # Sets stack pointer to 256 and calls Sys.init
-        # Only Main.vm should generate this bootstrap code
-        if self.classname == MAIN_CLASSNAME:
-            self.write_comment('bootstrap')
-            self.write('@256')
-            self.write('D=A')
-            self.write('@SP')
-            self.write('M=D')
-            self.write_call('Sys.init', 0)
 
+    def write_bootstrap(self):
+        """
+        Sets stack pointer to 256 and calls Sys.init
+        """
+        self.write_comment('Bootstrap')
+        self.write('@256')
+        self.write('D=A')
+        self.write('@SP')
+        self.write('M=D')
+        self.write_call('Sys.init', 0)
 
     def write_comment(self, s):
         self.write('// {}'.format(s))
@@ -349,10 +350,10 @@ class CodeWriter:
         # Push @LCL 
         self.write('@LCL')
         self.write('A=M')
-        for n in range(nvars):
+        for x in range(nvars):
             self.write('M=0')
             self.write('A=A+1')
-        
+
     def write_return(self, label):
         # Get the return value from top of stack
         self.write('@SP')
@@ -391,9 +392,6 @@ class CodeWriter:
         self.write('M=M-1')
         self.write('A=M')
         
-        self.write('@SP')
-        self.write('M=M-1')
-        
     def write_if(self, label):
         self.write('@SP')
         self.write('M=M-1')
@@ -408,12 +406,8 @@ class CodeWriter:
         self.write('@{}'.format(funcname))
         self.write('0;JMP')
 
-    def write_call(self, funcname, nvars):
-        return_label = '{}$RET.{}'.format(
-            self.classname, 
-            self.return_label_index
-        )
-
+    def write_call(self, funcname, nvars)
+        return_label = '{}$RET.{}'.format(self.classname, self.return_label_index)
         # Save return address to stack
         self.write('@{}'.format(return_label))
         self.write('D=A')
@@ -457,21 +451,17 @@ class CodeWriter:
 def main():
     path = Path(sys.argv[1])
 
-    # If argument is a directory, get all *.vm files
+    # If argument is a directory, get all *.vm files, generate bootstrap code
     if path.is_dir():
         vmfiles = path.glob('**/*.vm') 
-        #if 'Main.vm' not in vmfiles:
-        #    raise Exception("No Main.vm found")
+        CodeWriter('').write_bootstrap()
     else:
-        vmfiles = [path]
-
+        vmfiles = [path] # Don't generate bootstrap code if there's only one vm file
     for filename in vmfiles:
         classname = Path(filename).name.split('.')[0]
-
         with open(filename, 'r') as f:
             parser = Parser(f.readlines())
             writer = CodeWriter(classname)
-            writer.write_bootstrap()
             for command in parser.advance():
                 writer.write_command(command)
 
