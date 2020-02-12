@@ -341,73 +341,81 @@ class CodeWriter:
         self.write('M=256')
 
     def write_label(self, label):
-        self.write('({})'.format(label))
+        self.write('({}${})'.format(self.classname, label))
 
     def write_function(self, funcname, nvars):
         # Write function label
         self.write('({})'.format(funcname))
 
-        # Push @LCL 
+        # Push local nvars 
         self.write('@LCL')
         self.write('A=M')
+
         for x in range(nvars):
             self.write('M=0')
             self.write('A=A+1')
 
     def write_return(self, label):
-        # Get the return value from top of stack
-        self.write('@SP')
-        self.write('A=M-1')
+        # Store endFrame in R13
+        self.write('@LCL')
         self.write('D=M')
 
-        # Jump to ARG 0 and set to return value
+        self.write('@R13')
+        self.write('M=D')
+
+        # Store returnAddr = *(endFrame - 5)
+        self.write('@5')
+        self.write('D=D-A')
+        self.write('A=D')
+        self.write('D=M')
+        self.write('@R14')
+        self.write('M=D')
+
+        # *ARG pop()
+        self.write('@SP')
+        self.write('M=M-1')
+        self.write('A=M')
+        self.write('D=M')
         self.write('@ARG')
         self.write('A=M')
         self.write('M=D')
 
-        # Jump to LCL and set SP
-        self.write('@LCL')
-        self.write('D=M')
-
+        # SP = ARG + 1
+        self.write('@ARG')
+        self.write('D=M+1')
         self.write('@SP')
         self.write('M=D')
 
         for ptr in ['@THAT', '@THIS', '@ARG', '@LCL']:
-            # Set *SP = *SP - 1
-            self.write('@SP')
+            # Set D = *(--endFrame) 
+            self.write('@R13')
             self.write('M=M-1')
-
-            self.write('@SP')
-            self.write('A=M') 
-
-            # Get saved pointer value
+            self.write('A=M')
             self.write('D=M')
 
-            # Restor saved value
+            # Restore pointer to saved value
             self.write(ptr)
             self.write('M=D')
 
-        # Goto return address (should be top of stack)
-        self.write('@SP')
-        self.write('M=M-1')
+        # Goto return address in @R14
+        self.write('@R14')
         self.write('A=M')
+        self.write('0;JMP')
         
     def write_if(self, label):
         self.write('@SP')
         self.write('M=M-1')
-
-        self.write('@SP')
         self.write('A=M')
         self.write('D=M')
-        self.write('@{}.{}'.format(self.classname, label))
+        self.write('@{}${}'.format(self.classname, label))
         self.write('D;JNE')
         
     def write_goto(self, funcname):
-        self.write('@{}'.format(funcname))
+        self.write('@{}${}'.format(self.classname, funcname))
         self.write('0;JMP')
 
-    def write_call(self, funcname, nvars)
-        return_label = '{}$RET.{}'.format(self.classname, self.return_label_index)
+    def write_call(self, funcname, nvars):
+        return_label = '{}$RET.'.format(funcname, self.return_label_index)
         # Save return address to stack
         self.write('@{}'.format(return_label))
         self.write('D=A')
@@ -436,11 +444,12 @@ class CodeWriter:
         self.write('M=D')
 
         # increment SP
-        self.write('@SP')
-        self.write('M=M+1')
+        #self.write('@SP')
+        #self.write('M=M+1')
 
-        # jump to funcname
-        self.write_goto(funcname)
+        # Jump to funcname
+        self.write('@{}'.format(funcname))
+        self.write('0;JMP')
 
         # Write the return label
         self.write('({})'.format(return_label))
