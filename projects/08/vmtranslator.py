@@ -415,7 +415,8 @@ class CodeWriter:
         self.write('0;JMP')
 
     def write_call(self, funcname, nvars):
-        return_label = '{}$RET.'.format(funcname, self.return_label_index)
+        return_label = '{}$RET.{}'.format(funcname, self.return_label_index)
+
         # Save return address to stack
         self.write('@{}'.format(return_label))
         self.write('D=A')
@@ -442,10 +443,6 @@ class CodeWriter:
         self.write('D=M')
         self.write('@LCL')
         self.write('M=D')
-
-        # increment SP
-        #self.write('@SP')
-        #self.write('M=M+1')
 
         # Jump to funcname
         self.write('@{}'.format(funcname))
