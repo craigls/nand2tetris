@@ -347,13 +347,9 @@ class CodeWriter:
         # Write function label
         self.write('({})'.format(funcname))
 
-        # Push local nvars 
-        self.write('@LCL')
-        self.write('A=M')
-
-        for x in range(nvars):
-            self.write('M=0')
-            self.write('A=A+1')
+        # Initialize local stack to 0
+        for n in range(nvars):
+            self.push_constant(0)
 
     def write_return(self, label):
         # Store endFrame in R13
