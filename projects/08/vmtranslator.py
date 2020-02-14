@@ -283,13 +283,13 @@ class CodeWriter:
         self.write('A=M')
         self.write('M=D')
             
-    def write_arithmetic(self, cmd):
-        if cmd == 'neg':
+    def write_arithmetic(self, op):
+        if op == 'neg':
             self.write('@SP')
             self.write('A=M-1')
             self.write('M=-M')
 
-        elif cmd == 'not':
+        elif op == 'not':
             self.write('@SP')
             self.write('A=M-1')
             self.write('M=!M')
@@ -303,21 +303,21 @@ class CodeWriter:
             self.write('@SP')
             self.write('A=M-1')
 
-            if cmd in ('sub', 'eq', 'lt', 'gt'):
+            if op in ('sub', 'eq', 'lt', 'gt'):
                 self.write('D=M-D')
-            elif cmd == 'add':
+            elif op == 'add':
                 self.write('D=M+D')
-            elif cmd == 'and':
+            elif op == 'and':
                 self.write('D=D&M')
-            elif cmd == 'or':
+            elif op == 'or':
                 self.write('D=D|M')
 
             # Operations that return boolean values
             # Note: TRUE = -1 and FALSE = 0 here
-            if cmd in ('eq', 'lt', 'gt', 'not'):
+            if op in ('eq', 'lt', 'gt', 'not'):
                 # Default to FALSE (0)
                 self.write('@SP')
-                slef.write('A=M-1')
+                self.write('A=M-1')
                 self.write('M=D')
 
                 self.write('@{}$BOOL_TRUE.{}'.format(self.classname, self.command_index))
@@ -456,7 +456,7 @@ def main():
     # If argument is a directory, get all *.vm files, generate bootstrap code
     if path.is_dir():
         vmfiles = path.glob('**/*.vm') 
-        CodeWriter('').write_bootstrap()
+        CodeWriter().write_bootstrap()
     else:
         vmfiles = [path] # Don't generate bootstrap code if there's only one vm file
     for filename in vmfiles:
