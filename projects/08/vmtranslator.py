@@ -312,7 +312,7 @@ class CodeWriter:
 
             # Operations that produce boolean values
             # Note: true = -1 and false = 0 here
-            if cmd in ('eq', 'lt', 'gt'):
+            if cmd in ('eq', 'lt', 'gt', 'not'):
                 self.write('@{}$BOOL_TRUE.{}'.format(self.classname, self.command_index))
                 if cmd == 'eq':
                     self.write('D;JEQ')
@@ -336,9 +336,60 @@ class CodeWriter:
             self.write('A=M-1')
             self.write('M=D')
 
-    def init(self):
-        self.write('@SP')
-        self.write('M=256')
+    def _write_arithmetic(self, cmd):
+        if cmd == 'neg':
+            self.write('@SP')
+            self.write('A=M-1')
+            self.write('M=-M')
+
+        elif cmd == 'not':
+            self.write('@SP')
+            self.write('A=M-1')
+            self.write('M=!M')
+
+        else:
+            self.write('@SP')
+            self.write('M=M-1')
+            self.write('D=M')
+
+            self.write('@SP')
+            self.write('M=M-1')
+            self.write('A=M')
+
+            if cmd in ('sub', 'eq', 'lt', 'gt'):
+                self.write('D=M-D')
+            elif cmd == 'add':
+                self.write('D=M+D')
+            elif cmd == 'and':
+                self.write('D=D&M')
+            elif cmd == 'or':
+                self.write('D=D|M')
+
+            # Operations that produce boolean values
+            # Note: true = -1 and false = 0 here
+            if cmd in ('eq', 'lt', 'gt', 'not'):
+                # Default to FALSE (0)
+                self.write('@SP')
+                slef.write('M=0')
+
+                self.write('@{}$BOOL_TRUE.{}'.format(self.classname, self.command_index))
+                if op == 'eq':
+                    self.write('D;JEQ')
+                elif op == 'gt':
+                    self.write('D;JGT')
+                elif op == 'lt':
+                    self.write('D;JLT')
+                elif op == 'not':
+                    self.write('D;JNE')
+                self.write('@{}$BOOL_END.{}'.format(self.classname, self.command_index))
+                self.write('0;JMP')
+                # Set *SP to TRUE (-1)
+                self.write('({}$BOOL_TRUE.{})'.format(self.classname, self.command_index))
+                self.write('M=-1')
+                self.write('({}$BOOL_END.{})'.format(self.classname, self.command_index))
+            else:
+                self.write('@SP')
+                self.write('M=D')
 
     def write_label(self, label):
         self.write('({}${})'.format(self.classname, label))
