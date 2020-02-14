@@ -133,44 +133,44 @@ class CodeWriter:
         self.write_comment(c.comment)
         if c.type == 'C_PUSH':
             if c.arg1 == 'temp':
-                self.push_temp(c.arg2)
+                self.write_push_temp(c.arg2)
             elif c.arg1 == 'pointer':
-                self.push_pointer(c.arg2)
+                self.write_push_pointer(c.arg2)
             elif c.arg1 == 'local':
-                self.push_local(c.arg2)
+                self.write_push_local(c.arg2)
             elif c.arg1 == 'this':
-                self.push_this(c.arg2)
+                self.write_push_this(c.arg2)
             elif c.arg1 == 'that':
-                self.push_that(c.arg2)
+                self.write_push_that(c.arg2)
             elif c.arg1 == 'static':
-                self.push_static(c.arg2)
+                self.write_push_static(c.arg2)
             elif c.arg1 == 'argument':
-                self.push_argument(c.arg2)
+                self.write_push_argument(c.arg2)
             elif c.arg1 == 'constant':
-                self.push_constant(c.arg2)
+                self.write_push_constant(c.arg2)
             else:
                 raise SyntaxError("C_PUSH invalid segment: {}".format(c.arg1))
 
         elif c.type == 'C_POP':
             if c.arg1 == 'temp':
-                self.pop_temp(c.arg2)
+                self.write_pop_temp(c.arg2)
             elif c.arg1 == 'pointer':
-                self.pop_pointer(c.arg2)
+                self.write_pop_pointer(c.arg2)
             elif c.arg1 == 'local':
-                self.pop_local(c.arg2)
+                self.write_pop_local(c.arg2)
             elif c.arg1 == 'this':
-                self.pop_this(c.arg2)
+                self.write_pop_this(c.arg2)
             elif c.arg1 == 'that':
-                self.pop_that(c.arg2)
+                self.write_pop_that(c.arg2)
             elif c.arg1 == 'static':
-                self.pop_static(c.arg2)
+                self.write_pop_static(c.arg2)
             elif c.arg1 == 'argument':
-                self.pop_argument(c.arg2)
+                self.write_pop_argument(c.arg2)
             else:
                 raise SyntaxError("C_POP invalid segment: {}".format(c.arg1))
 
         elif c.type == 'C_ARITHMETIC':
-            self.arithmetic(c.cmd)
+            self.write_arithmetic(c.cmd)
         elif c.type == 'C_CALL':
             self.write_call(c.arg1, c.arg2)
         elif c.type == 'C_FUNCTION':
@@ -211,58 +211,58 @@ class CodeWriter:
             self.write('@{}'.format(index))
             self.write('A=A+D') 
     
-    def push_constant(self, index):
+    def write_push_constant(self, index):
         self.write('@{}'.format(index))
         self.write('D=A')
         self.dreg_to_stack()
 
-    def push_temp(self, index):
-        self.push_segment('temp', index)
+    def write_push_temp(self, index):
+        self.write_push_segment('temp', index)
 
-    def push_pointer(self, index):
+    def write_push_pointer(self, index):
         self.write('@THAT' if index else '@THIS')
         self.write('D=M')
         self.dreg_to_stack()
 
-    def push_local(self, index):
-        self.push_segment('local', index)
+    def write_push_local(self, index):
+        self.write_push_segment('local', index)
 
-    def push_this(self, index):
-        self.push_segment('this', index)
+    def write_push_this(self, index):
+        self.write_push_segment('this', index)
 
-    def push_that(self, index):
-        self.push_segment('that', index)
+    def write_push_that(self, index):
+        self.write_push_segment('that', index)
 
-    def push_argument(self, index):
-        self.push_segment('argument', index)
+    def write_push_argument(self, index):
+        self.write_push_segment('argument', index)
 
-    def push_static(self, index):
-        self.push_segment('static', index)
+    def write_push_static(self, index):
+        self.write_push_segment('static', index)
 
-    def push_segment(self, segment, index):
+    def write_push_segment(self, segment, index):
         self.segment_to_areg(segment, index)
         self.write('D=M')
         self.dreg_to_stack()
 
-    def pop_local(self, index):
-        self.pop_segment('local', index)
+    def write_pop_local(self, index):
+        self.write_pop_segment('local', index)
 
-    def pop_argument(self, index):
-        self.pop_segment('argument', index)
+    def write_pop_argument(self, index):
+        self.write_pop_segment('argument', index)
 
-    def pop_this(self, index):
-        self.pop_segment('this', index)
+    def write_pop_this(self, index):
+        self.write_pop_segment('this', index)
 
-    def pop_that(self, index):
-        self.pop_segment('that', index)
+    def write_pop_that(self, index):
+        self.write_pop_segment('that', index)
 
-    def pop_static(self, index):
-        self.pop_segment('static', index)
+    def write_pop_static(self, index):
+        self.write_pop_segment('static', index)
 
-    def pop_temp(self, index):
-        self.pop_segment('temp', index)
+    def write_pop_temp(self, index):
+        self.write_pop_segment('temp', index)
 
-    def pop_pointer(self, index):
+    def write_pop_pointer(self, index):
         self.write('@SP')
         self.write('M=M-1')
         self.write('A=M')
@@ -270,7 +270,7 @@ class CodeWriter:
         self.write('@THAT' if index else '@THIS')
         self.write('M=D')
 
-    def pop_segment(self, segment, index):
+    def write_pop_segment(self, segment, index):
         self.segment_to_areg(segment, index)
         self.write('D=A')
         self.write('@R15')
@@ -283,7 +283,7 @@ class CodeWriter:
         self.write('A=M')
         self.write('M=D')
             
-    def arithmetic(self, cmd):
+    def write_arithmetic(self, cmd):
         if cmd == 'neg':
             self.write('@SP')
             self.write('A=M-1')
@@ -299,7 +299,9 @@ class CodeWriter:
             self.write('M=M-1')
             self.write('A=M')
             self.write('D=M')
-            self.write('A=A-1')
+
+            self.write('@SP')
+            self.write('A=M-1')
 
             if cmd in ('sub', 'eq', 'lt', 'gt'):
                 self.write('D=M-D')
@@ -310,67 +312,13 @@ class CodeWriter:
             elif cmd == 'or':
                 self.write('D=D|M')
 
-            # Operations that produce boolean values
-            # Note: true = -1 and false = 0 here
-            if cmd in ('eq', 'lt', 'gt', 'not'):
-                self.write('@{}$BOOL_TRUE.{}'.format(self.classname, self.command_index))
-                if cmd == 'eq':
-                    self.write('D;JEQ')
-                elif cmd == 'gt':
-                    self.write('D;JGT')
-                elif cmd == 'lt':
-                    self.write('D;JLT')
-                elif cmd == 'not':
-                    self.write('D;JNE')
-
-                self.write('({}$BOOL_FALSE.{})'.format(self.classname, self.command_index))
-                self.write('D=0')
-                self.write('@{}$BOOL_END.{}'.format(self.classname, self.command_index))
-                self.write('0;JMP')
-                self.write('({}$BOOL_TRUE.{})'.format(self.classname, self.command_index))
-                self.write('D=-1')
-                self.write('({}$BOOL_END.{})'.format(self.classname, self.command_index))
-
-            # Push the D value onto A-1
-            self.write('@SP')
-            self.write('A=M-1')
-            self.write('M=D')
-
-    def _write_arithmetic(self, cmd):
-        if cmd == 'neg':
-            self.write('@SP')
-            self.write('A=M-1')
-            self.write('M=-M')
-
-        elif cmd == 'not':
-            self.write('@SP')
-            self.write('A=M-1')
-            self.write('M=!M')
-
-        else:
-            self.write('@SP')
-            self.write('M=M-1')
-            self.write('D=M')
-
-            self.write('@SP')
-            self.write('M=M-1')
-            self.write('A=M')
-
-            if cmd in ('sub', 'eq', 'lt', 'gt'):
-                self.write('D=M-D')
-            elif cmd == 'add':
-                self.write('D=M+D')
-            elif cmd == 'and':
-                self.write('D=D&M')
-            elif cmd == 'or':
-                self.write('D=D|M')
-
-            # Operations that produce boolean values
-            # Note: true = -1 and false = 0 here
+            # Operations that return boolean values
+            # Note: TRUE = -1 and FALSE = 0 here
             if cmd in ('eq', 'lt', 'gt', 'not'):
                 # Default to FALSE (0)
                 self.write('@SP')
-                slef.write('M=0')
+                slef.write('A=M-1')
+                self.write('M=D')
 
                 self.write('@{}$BOOL_TRUE.{}'.format(self.classname, self.command_index))
                 if op == 'eq':
@@ -383,12 +331,13 @@ class CodeWriter:
                     self.write('D;JNE')
                 self.write('@{}$BOOL_END.{}'.format(self.classname, self.command_index))
                 self.write('0;JMP')
-                # Set *SP to TRUE (-1)
+                # Set to TRUE (-1)
                 self.write('({}$BOOL_TRUE.{})'.format(self.classname, self.command_index))
                 self.write('M=-1')
                 self.write('({}$BOOL_END.{})'.format(self.classname, self.command_index))
             else:
                 self.write('@SP')
+                self.write('A=M-1')
                 self.write('M=D')
 
     def write_label(self, label):
@@ -400,7 +349,7 @@ class CodeWriter:
 
         # Initialize local stack to 0
         for n in range(nvars):
-            self.push_constant(0)
+            self.write_push_constant(0)
 
     def write_return(self, label):
         # Store endFrame in R13
