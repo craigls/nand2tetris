@@ -314,7 +314,7 @@ class CodeWriter:
 
             # Operations that return boolean values
             # Note: TRUE = -1 and FALSE = 0 here
-            if op in ('eq', 'lt', 'gt', 'not'):
+            if op in ('eq', 'lt', 'gt'):
                 # Default to FALSE (0)
                 self.write('@SP')
                 self.write('A=M-1')
@@ -327,8 +327,6 @@ class CodeWriter:
                     self.write('D;JGT')
                 elif op == 'lt':
                     self.write('D;JLT')
-                elif op == 'not':
-                    self.write('D;JNE')
                 self.write('@{}$BOOL_END.{}'.format(self.classname, self.command_index))
                 self.write('0;JMP')
                 # Set to TRUE (-1)
