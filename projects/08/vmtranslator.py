@@ -217,6 +217,7 @@ class CodeWriter:
         self.dreg_to_stack()
 
     def write_push_temp(self, index):
+        self.write('@{}'.format(index))
         self.write_push_segment('temp', index)
 
     def write_push_pointer(self, index):
@@ -303,14 +304,16 @@ class CodeWriter:
             self.write('@SP')
             self.write('A=M-1')
 
-            if op in ('sub', 'eq', 'lt', 'gt'):
-                self.write('D=M-D')
+            if op in ('eq', 'lt', 'gt'):
+                self.write('M=M-D')
+            elif op == 'sub':
+                self.write('M=M-D')
             elif op == 'add':
-                self.write('D=M+D')
+                self.write('M=M+D')
             elif op == 'and':
-                self.write('D=D&M')
+                self.write('M=D&M')
             elif op == 'or':
-                self.write('D=D|M')
+                self.write('M=D|M')
 
             # Operations that return boolean values
             # Note: TRUE = -1 and FALSE = 0 here
@@ -318,8 +321,8 @@ class CodeWriter:
                 # Default to FALSE (0)
                 self.write('@SP')
                 self.write('A=M-1')
-                self.write('M=D')
-
+                self.write('D=M')
+                self.write('M=0')
                 self.write('@{}$BOOL_TRUE.{}'.format(self.classname, self.command_index))
                 if op == 'eq':
                     self.write('D;JEQ')
@@ -331,12 +334,10 @@ class CodeWriter:
                 self.write('0;JMP')
                 # Set to TRUE (-1)
                 self.write('({}$BOOL_TRUE.{})'.format(self.classname, self.command_index))
-                self.write('M=-1')
-                self.write('({}$BOOL_END.{})'.format(self.classname, self.command_index))
-            else:
                 self.write('@SP')
                 self.write('A=M-1')
-                self.write('M=D')
+                self.write('M=-1')
+                self.write('({}$BOOL_END.{})'.format(self.classname, self.command_index))
 
     def write_label(self, label):
         self.write('({}${})'.format(self.classname, label))
@@ -350,14 +351,14 @@ class CodeWriter:
             self.write_push_constant(0)
 
     def write_return(self, label):
-        # Store endFrame in R13
+        self.write_comment('Store endFrame in @R13')
         self.write('@LCL')
         self.write('D=M')
 
         self.write('@R13')
         self.write('M=D')
 
-        # Store returnAddr = *(endFrame - 5)
+        self.write_comment('Store returnAddr = *(endFrame - 5)')
         self.write('@5')
         self.write('D=D-A')
         self.write('A=D')
@@ -365,7 +366,7 @@ class CodeWriter:
         self.write('@R14')
         self.write('M=D')
 
-        # *ARG pop()
+        self.write_comment('*ARG.pop()')
         self.write('@SP')
         self.write('M=M-1')
         self.write('A=M')
@@ -374,14 +375,14 @@ class CodeWriter:
         self.write('A=M')
         self.write('M=D')
 
-        # SP = ARG + 1
+        self.write_comment('SP = ARG + 1')
         self.write('@ARG')
         self.write('D=M+1')
         self.write('@SP')
         self.write('M=D')
 
         for ptr in ['@THAT', '@THIS', '@ARG', '@LCL']:
-            # Set D = *(--endFrame) 
+            self.write_comment('Set {} = *(--endFrame)'.format(ptr))
             self.write('@R13')
             self.write('M=M-1')
             self.write('A=M')
@@ -391,7 +392,7 @@ class CodeWriter:
             self.write(ptr)
             self.write('M=D')
 
-        # Goto return address in @R14
+        self.write_comment('Goto return address in @R14')
         self.write('@R14')
         self.write('A=M')
         self.write('0;JMP')
@@ -411,18 +412,18 @@ class CodeWriter:
     def write_call(self, funcname, nvars):
         return_label = '{}$RET.{}'.format(funcname, self.return_label_index)
 
-        # Save return address to stack
+        self.write_comment('Save return address for {} to stack'.format(return_label))
         self.write('@{}'.format(return_label))
         self.write('D=A')
         self.dreg_to_stack()
 
-        # Backup the caller pointer values to stack
+        self.write_comment('Backup the caller pointer values to stack')
         for ptr in ['@LCL', '@ARG', '@THIS', '@THAT']:
             self.write(ptr)
             self.write('D=M')
             self.dreg_to_stack()
         
-        # Reposition @ARG (SP - 5 - nvars))))
+        self.write_comment('Reposition ARG (SP - 5 - {})'.format(nvars))
         self.write('@SP')
         self.write('D=M')
 
@@ -432,17 +433,17 @@ class CodeWriter:
         self.write('@ARG')
         self.write('M=D')
 
-        # Reposition @LCL
+        self.write_comment('Reposition @LCL')
         self.write('@SP')
         self.write('D=M')
         self.write('@LCL')
         self.write('M=D')
 
-        # Jump to funcname
+        self.write_comment('Jump to {}'.format(funcname))
         self.write('@{}'.format(funcname))
         self.write('0;JMP')
 
-        # Write the return label
+        self.write_comment('Write return label {}'.format(return_label))
         self.write('({})'.format(return_label))
 
         # Increment return label index for next time
