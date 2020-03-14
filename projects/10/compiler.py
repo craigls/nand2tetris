@@ -43,7 +43,6 @@ class CompilationEngine:
         else:
             tmp = self.current
             self.advance()
-            print('Ate: {}'.format(tmp))
             return tmp
             
     def compile_class(self):
@@ -101,23 +100,19 @@ class CompilationEngine:
     def compile_var_dec(self):
         node = Node('varDec')
         node.add(self.eat('var'))
-        while True:
-            node.add(self.eat()) # int|char|boolean|className
+        node.add(self.eat()) # type
+        node.add(self.eat()) # varNAme
+        while self.current.value != ';':
+            node.add(self.eat(','))
             node.add(self.eat()) # varName
-            if self.current.value != ',':
-                break
-            else:
-                node.add(self.eat(','))
         node.add(self.eat(';'))
         return node
 
     def compile_let(self):
         node = Node('letStatement')
         node.add(self.eat('let'))
-        if self.next.value == '[':
-            node.add(self.compile_expression()) # will handle varName[expression]
-        else:
-            node.add(self.eat()) # varName
+        for x in self.compile_term().nodes: # will handle varName[expression]
+            node.add(x)
         node.add(self.eat('='))
         node.add(self.compile_expression())
         node.add(self.eat(';'))
@@ -155,6 +150,11 @@ class CompilationEngine:
         node.add(self.eat('{'))
         node.add(self.compile_statements())
         node.add(self.eat('}'))
+        if self.current.value == 'else':
+            node.add(self.eat('else'))
+            node.add(self.eat('{'))
+            node.add(self.compile_statements())
+            node.add(self.eat('}'))
         return node 
 
     def compile_while(self):
@@ -271,7 +271,9 @@ def main():
         with open(str(fn), 'r') as f:
             comp = CompilationEngine(Tokenizer(f.read()))
             xml = comp.compile()
-            with open(fn.with_suffix('.xml').name, 'w') as out:
+            outfn = fn.with_suffix('.xml').name
+            print('Writing to {}'.format(outfn))
+            with open(outfn, 'w') as out:
                 out.write(xml)
 
 
