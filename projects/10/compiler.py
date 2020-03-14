@@ -111,8 +111,11 @@ class CompilationEngine:
     def compile_let(self):
         node = Node('letStatement')
         node.add(self.eat('let'))
-        for x in self.compile_term().nodes: # will handle varName[expression]
-            node.add(x)
+        node.add(self.eat()) # varName
+        if self.current.value == '[': # check for varName[expression]
+            node.add(self.eat('['))
+            node.add(self.compile_expression())
+            node.add(self.eat(']'))
         node.add(self.eat('='))
         node.add(self.compile_expression())
         node.add(self.eat(';'))
@@ -121,8 +124,7 @@ class CompilationEngine:
     def compile_do(self):
         node = Node('doStatement')
         node.add(self.eat('do'))
-        for x in self.compile_term().nodes:
-            node.add(x)
+        node = self.compile_subroutine_call(node)
         node.add(self.eat(';'))
         return node
 
@@ -211,8 +213,26 @@ class CompilationEngine:
             node.add(self.eat(')'))
             return node
 
+        # Handle the following grammars:
+        # - subroutineCall ( subroutineName '(' expressionList ')' 
+        # - subroutineCall ( className | varNAme ) '.' subroutineName
+        elif self.next.value in ('(', '.'):
+            return self.compile_subroutine_call(node)
+
+        # unaryOp term
+        elif self.current.value in ('-', '~'):
+            node.add(self.eat())
+            node.add(self.compile_term())
+            return node
+
+        # varName
+        else:
+            node.add(self.eat())
+            return node
+
+    def compile_subroutine_call(self, node):
         # subroutineCall ( subroutineName '(' expressionList ')'
-        elif self.next.value == '(': 
+        if self.next.value == '(': 
             node.add(self.eat()) # subroutineName
             node.add(self.eat('('))
             node.add(self.compile_expression_list())
@@ -229,16 +249,6 @@ class CompilationEngine:
             node.add(self.eat(')'))
             return node
 
-        # unaryOp term
-        elif self.current.value in ('-', '~'):
-            node.add(self.eat())
-            node.add(self.compile_term())
-            return node
-
-        # varName
-        else:
-            node.add(self.eat())
-            return node
         
     def get_xml(self, root):
         doc = Document()
@@ -261,11 +271,10 @@ class CompilationEngine:
         return self.get_xml(root)
 
 
-
 def main():
     path = Path(sys.argv[1])
 
-    # If argument is a directory, get all *.vm files, generate bootstrap code
+    # If argument is a directory, get all *.jack files
     jackfiles = path.glob('**/*.jack') if path.is_dir() else [path]
     for fn in jackfiles:
         with open(str(fn), 'r') as f:
