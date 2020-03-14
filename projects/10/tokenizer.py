@@ -2,6 +2,7 @@
 Jack language tokenizer
 """
 from xml.dom.minidom import Document
+from node import Node
 
 import sys
 import string
@@ -33,17 +34,7 @@ KEYWORDS = [
 SYMBOLS = '{}()\[\].,;+-*/&|<>=~'
 MAXINTEGER = 32767
 IDENTIFIERS = string.ascii_letters + string.digits + '_'
-STRING_QUOTE = '"'
-COMMENT = '//'
-BLOCK_COMMENT = '/*'
-BLOCK_COMMENT_END = '*/'
-NEWLINE = '\n'
 
-
-class Token:
-    def __init__(self, name, value):
-        self.name = name
-        self.value = value
 
 class Tokenizer:
     def __init__(self, data):
@@ -51,6 +42,8 @@ class Tokenizer:
         self.data = self.strip_comments(data)
         self.endpos = len(self.data) - 1
         self.line = 1
+        self.current = None
+        self.next = None
 
     def strip_comments(self, data):
         """
@@ -62,15 +55,15 @@ class Tokenizer:
         
         while pos <= end:
             # Line comment
-            if data[pos:].startswith(COMMENT):
-                while pos <= end and data[pos] != NEWLINE:
+            if data[pos:].startswith('//'):
+                while pos <= end and data[pos] != '\n':
                     pos += 1
                 pos += 1
                 #import pdb;pdb.set_trace()
 
             # Block comment
-            elif data[pos:].startswith(BLOCK_COMMENT):
-                while pos <= end and data[pos:pos + 2] != BLOCK_COMMENT_END:
+            elif data[pos:].startswith('/*'):
+                while pos <= end and data[pos:pos + 2] != '*/':
                     pos += 1
                 pos += 2
             else:
@@ -79,7 +72,7 @@ class Tokenizer:
                 pos += 1
         return out
 
-    def next_token(self):
+    def get_token(self):
         token = None
         chunk = ''
 
@@ -94,17 +87,17 @@ class Tokenizer:
             # Symbol handling
             if char in SYMBOLS:
                 self.pos += 1
-                return Token('symbol', char)
+                return Node('symbol', char)
             
             # String literal handling
-            elif char == STRING_QUOTE:
+            elif char == '"':
                 self.pos += 1
-                while self.data[self.pos] != STRING_QUOTE:
+                while self.data[self.pos] != '"':
                     char += self.data[self.pos]
                     self.pos += 1
                 char += self.data[self.pos]
                 self.pos += 1
-                return Token('stringConstant', char[1:-1])
+                return Node('stringConstant', char[1:-1])
 
             # Other token handling
             else:
@@ -118,11 +111,11 @@ class Tokenizer:
                 if chunk.isdigit():
                     value = int(chunk)
                     if value >= 0 and value < MAXINTEGER:
-                        return Token('integerConstant', chunk)
+                        return Node('integerConstant', chunk)
 
                 # Keyword token handling
                 elif chunk in KEYWORDS:
-                    return Token('keyword', chunk)
+                    return Node('keyword', chunk)
 
                 # Identifier token handling
                 else:
@@ -132,33 +125,31 @@ class Tokenizer:
                         if char not in IDENTIFIERS:
                             break
                     else:
-                        return Token('identifier', chunk)
-        return None
+                        return Node('identifier', chunk)
         
     def get_tokens(self):
+        self.pos = 0
         while True:
-            token = self.next_token() 
-            # token is None when EOF reached
-            if token:
-                yield token
-            else:
+            token = self.get_token()
+            if not token:
                 raise StopIteration
-
-def to_xml(tokens):
-    doc = Document()
-    root = doc.createElement('tokens')
-    doc.appendChild(root)
-    
-    for token in tokens:
-        node = doc.createElement(token.name)
-        text = doc.createTextNode(token.value)
-        node.appendChild(text)
-        root.appendChild(node)
-    return root.toprettyxml(indent='')
+            yield token
+            
+    def to_xml(self):
+        doc = Document()
+        root = doc.createElement('tokens')
+        doc.appendChild(root)
+        
+        for token in self.get_tokens():
+            elem = doc.createElement(token.name)
+            text = doc.createTextNode(' {} '.format(token.value))
+            elem.appendChild(text)
+            root.appendChild(elem)
+        return root.toprettyxml(indent='')
 
 if __name__ == '__main__':
     with open(sys.argv[1]) as f:
         data = f.read()
     tokenizer = Tokenizer(data)
-    print(to_xml(token for token in tokenizer.get_tokens()), end='')
+    print(tokenizer.to_xml(), end='')
     
