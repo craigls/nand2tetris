@@ -425,12 +425,11 @@ class CompilationEngine:
 
 
 def main():
-    outdir = '.'
+    outdir = os.getcwd()
     path = Path(sys.argv[1])
 
     # If argument is a directory, get all *.jack files
     jackfiles = path.glob('**/*.jack') if path.is_dir() else [path]
-    outdir = os.getcwd()
 
     if path.is_dir():
         # Append .vm to dirname and create it
