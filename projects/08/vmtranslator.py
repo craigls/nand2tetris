@@ -460,7 +460,7 @@ def main():
         vmfiles = [path] # Don't generate bootstrap code if there's only one vm file
     for filename in vmfiles:
         classname = Path(filename).name.split('.')[0]
-        with open(filename, 'r') as f:
+        with open(str(filename), 'r') as f:
             parser = Parser(f.readlines())
             writer = CodeWriter(classname)
             for command in parser.advance():
