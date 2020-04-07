@@ -115,9 +115,9 @@ class CompilationEngine:
             
     def eat(self, value=None):
         if value is not None and self.current.value != value:
-            raise SyntaxError("{} != {} (next: {})".format(
-                self.current.value, 
+            raise SyntaxError("expected: {} actual: {} (next: {})".format(
                 value, 
+                self.current.value, 
                 self.next.value)
             )
         else:
