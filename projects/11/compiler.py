@@ -48,8 +48,8 @@ class CompilationEngine:
         '/': 'call Math.divide 2',
         '&': 'and',
         '|': 'or',
-        '<': 'gt',
-        '>': 'lt',
+        '<': 'lt',
+        '>': 'gt',
         '=': 'eq',
     }
 
@@ -72,16 +72,19 @@ class CompilationEngine:
         return self.symbols.lookup(name) or self.class_symbols.lookup(name)
 
     def code_write(self, exp):
+        """
+        Translates variable name/string literal into vm instructions 
+        """
+
         if str(exp).isdigit():
             self.write('push constant {}'.format(exp))
-
-        elif self.lookup(exp):
-            symbol = self.lookup(exp)
-            self.write('push {} {}'.format(symbol.kind, symbol.index))
         elif exp == 'this':
             self.write('push pointer 0')
         elif exp == 'that':
             self.write('push pointer 1')
+        elif self.lookup(exp):
+            symbol = self.lookup(exp)
+            self.write('push {} {}'.format(symbol.kind, symbol.index))
 
         # Operators
         elif exp in self.OPERATORS:
@@ -92,14 +95,15 @@ class CompilationEngine:
             self.write('push constant 0')
         elif exp == 'true':
             self.write('push constant 0')
-            self.write('neg')
+            self.write('not')
 
         # String?
         elif exp.startswith('"') and exp.endswith('"'):
             string = exp[1:-1]
+            length = len(string)
+            self.write('push constant {}'.format(length))
             self.write("call String.new 1")
             for char in string:
-                self.write("push pointer 0")
                 self.write('push constant {}'.format(ord(char)))
                 self.write('call String.appendChar 2')
         else:
@@ -117,7 +121,6 @@ class CompilationEngine:
                 self.next.value)
             )
         else:
-            print("// " + self.current.value, file=self.out)
             tmp = self.current
             self.advance()
             return tmp.value
@@ -224,26 +227,32 @@ class CompilationEngine:
         var_name = self.eat()
         symbol = self.lookup(var_name)
 
-        if self.current.value == '[': # handle varName[expression]
+        if self.current.value == '[': # handle varName[expression] (expr1)
+            self.write('push {} {}'.format(symbol.kind, symbol.index))
             self.eat('[')
             self.compile_expression()
             self.eat(']')
-        self.eat('=')
+            self.eat('=')
 
-        if symbol.type == 'Array':
-            self.write('add')
-            self.compile_expression() 
+            # keep expr1 on the stack for now to avoid being clobbered by expr2
+            self.write('add') 
+            self.compile_expression() # compute expr2
 
-            # Store array on temp 0
-            self.write('pop temp 0')
-            self.write('pop pointer 1')
-            self.write('push temp 0')
-            self.write('pop that 0')
+            # store value of expr2 in temp 0
+            self.write('pop temp 0') 
+
+            # set pointer1 to expr1
+            self.write('pop pointer 1') 
+            self.write('push temp 0') 
+
+            # set value of pointer1 (expr1) to expr2
+            self.write('pop that 0') 
+            self.eat(';')
         else:
+            self.eat('=')
             self.compile_expression() 
-
-        self.write('pop {} {}'.format(symbol.kind, symbol.index))
-        self.eat(';')
+            self.write('pop {} {}'.format(symbol.kind, symbol.index))
+            self.eat(';')
 
     def compile_do(self):
         self.eat('do')
@@ -278,32 +287,32 @@ class CompilationEngine:
         self.eat(')')
 
         self.eat('{')
-        self.write('if-goto {}.endIf.{}'.format(self.class_name, index))
+        self.write('if-goto {}.IFFALSE{}'.format(self.class_name, index))
         self.compile_statements()
-        self.write('goto {}.endIf.{}'.format(self.class_name, index))
+        self.write('goto {}.ENDIF{}'.format(self.class_name, index))
         self.eat('}')
+        self.write('label {}.IFFALSE{}'.format(self.class_name, index))
 
         if self.current.value == 'else':
             self.eat('else')
             self.eat('{')
-            self.write('label {}.else.{}'.format(self.class_name, index))
             self.compile_statements()
             self.eat('}')
-        self.write('label {}.endIf.{}'.format(self.class_name, index))
+        self.write('label {}.ENDIF{}'.format(self.class_name, index))
 
     def compile_while(self):
         index = self.while_index
         self.eat('while')
         self.eat('(')
-        self.write('label {}.while.{}'.format(self.class_name, index))
+        self.write('label {}.WHILE{}'.format(self.class_name, index))
         self.compile_expression()
         self.write('not')
-        self.write('if-goto {}.endWhile.{}'.format(self.class_name, index))
+        self.write('if-goto {}.ENDWHILE{}'.format(self.class_name, index))
         self.eat(')')
         self.eat('{')
         self.compile_statements()
-        self.write('goto {}.while.{}'.format(self.class_name, index))
-        self.write('label {}.endWhile.{}'.format(self.class_name, index))
+        self.write('goto {}.WHILE{}'.format(self.class_name, index))
+        self.write('label {}.ENDWHILE{}'.format(self.class_name, index))
         self.eat('}')
         
     def compile_return(self):
@@ -337,12 +346,16 @@ class CompilationEngine:
             self.code_write(op)
 
     def compile_term(self):
+        # varName[expression]
         if self.next.value == '[':
             symbol = self.lookup(self.eat()) # varName
             self.write('push {} {}'.format(symbol.kind, symbol.index))
             self.eat('[')
             self.compile_expression()
             self.eat(']')
+            self.write('add')
+            self.write('pop pointer 1')
+            self.write('push that 0')
 
         # expression 
         elif self.current.value == '(':
@@ -379,7 +392,7 @@ class CompilationEngine:
             obj = self.class_name
             sub_name = self.eat() # subroutineName
             self.eat('(')
-            self.write('push pointer 0')
+            self.write('push pointer 0') # Push this object
             nvars = self.compile_expression_list() + 1
             self.eat(')')
 
