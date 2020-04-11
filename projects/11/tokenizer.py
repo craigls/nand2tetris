@@ -87,7 +87,6 @@ class Tokenizer:
                 self.pos += 1
                 continue
 
-            peek = self.data[self.pos+1:self.pos+2]
             char = self.data[self.pos]
 
             # Symbol handling
