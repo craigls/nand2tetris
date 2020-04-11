@@ -8,6 +8,7 @@ Writes .asm to standard output
 from pathlib import Path
 import sys
 import re 
+from collections import Counter
 
 COMMANDS = {
     'add': 'C_ARITHMETIC',
@@ -109,11 +110,10 @@ class CodeWriter:
         'that': 'THAT',
     }
 
-    def __init__(self, classname=None, out=None):
+    def __init__(self, classname=None, counters=None):
         self.classname = classname
-        self.command_index = 0
-        self.return_label_index = 0
-        self.out = out or sys.stdout
+        self.counters = counters
+        self.out = sys.stdout
 
     def write_bootstrap(self):
         """
@@ -185,8 +185,6 @@ class CodeWriter:
             self.write_goto(c.arg1)
         else:
             raise SyntaxError(c.type)
-
-        self.command_index += 1
 
     def write(self, s):
         print(s, file=self.out)
@@ -295,7 +293,7 @@ class CodeWriter:
             self.write('A=M-1')
             self.write('M=!M')
 
-        else:
+        elif op in ('sub', 'add', 'and', 'or', 'eq', 'lt', 'gt'):
             self.write('@SP')
             self.write('M=M-1')
             self.write('A=M')
@@ -304,9 +302,7 @@ class CodeWriter:
             self.write('@SP')
             self.write('A=M-1')
 
-            if op in ('eq', 'lt', 'gt'):
-                self.write('M=M-D')
-            elif op == 'sub':
+            if op == 'sub':
                 self.write('M=M-D')
             elif op == 'add':
                 self.write('M=M+D')
@@ -317,27 +313,33 @@ class CodeWriter:
 
             # Operations that return boolean values
             # Note: TRUE = -1 and FALSE = 0 here
-            if op in ('eq', 'lt', 'gt'):
+            elif op in ('eq', 'lt', 'gt'):
+                self.write('M=M-D')
+
                 # Default to FALSE (0)
                 self.write('@SP')
                 self.write('A=M-1')
                 self.write('D=M')
                 self.write('M=0')
-                self.write('@{}$BOOL_TRUE.{}'.format(self.classname, self.command_index))
+                self.write('@{}$BOOL_TRUE.{}'.format(self.classname, self.counters['bool_labels']))
                 if op == 'eq':
                     self.write('D;JEQ')
                 elif op == 'gt':
                     self.write('D;JGT')
                 elif op == 'lt':
                     self.write('D;JLT')
-                self.write('@{}$BOOL_END.{}'.format(self.classname, self.command_index))
+                self.write('@{}$BOOL_END.{}'.format(self.classname, self.counters['bool_labels']))
                 self.write('0;JMP')
                 # Set to TRUE (-1)
-                self.write('({}$BOOL_TRUE.{})'.format(self.classname, self.command_index))
+                self.write('({}$BOOL_TRUE.{})'.format(self.classname, self.counters['bool_labels']))
                 self.write('@SP')
                 self.write('A=M-1')
                 self.write('M=-1')
-                self.write('({}$BOOL_END.{})'.format(self.classname, self.command_index))
+                self.write('({}$BOOL_END.{})'.format(self.classname, self.counters['bool_labels']))
+        else:
+            raise SyntaxError(op)
+        self.counters['bool_labels'] += 1
+
 
     def write_label(self, label):
         self.write('({}${})'.format(self.classname, label))
@@ -410,7 +412,7 @@ class CodeWriter:
         self.write('0;JMP')
 
     def write_call(self, funcname, nvars):
-        return_label = '{}$RET.{}'.format(funcname, self.return_label_index)
+        return_label = '{}$RET.{}'.format(funcname, self.counters['return_labels'])
 
         self.write_comment('Save return address for {} to stack'.format(return_label))
         self.write('@{}'.format(return_label))
@@ -447,22 +449,23 @@ class CodeWriter:
         self.write('({})'.format(return_label))
 
         # Increment return label index for next time
-        self.return_label_index += 1
+        self.counters['return_labels'] += 1
         
 def main():
     path = Path(sys.argv[1])
+    counters = Counter() # For keeping track of labels
 
     # If argument is a directory, get all *.vm files, generate bootstrap code
     if path.is_dir():
         vmfiles = path.glob('**/*.vm') 
-        CodeWriter().write_bootstrap()
+        CodeWriter(counters=counters).write_bootstrap()
     else:
         vmfiles = [path] # Don't generate bootstrap code if there's only one vm file
     for filename in vmfiles:
         classname = Path(filename).name.split('.')[0]
         with open(str(filename), 'r') as f:
             parser = Parser(f.readlines())
-            writer = CodeWriter(classname)
+            writer = CodeWriter(classname=classname, counters=counters)
             for command in parser.advance():
                 writer.write_command(command)
 
