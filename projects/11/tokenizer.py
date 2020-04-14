@@ -115,8 +115,10 @@ class Tokenizer:
                 # Integer token handling
                 if chunk.isdigit():
                     value = int(chunk)
-                    if value >= 0 and value < MAXINTEGER:
+                    if value >= 0 and value <= MAXINTEGER:
                         return Token('integerConstant', chunk)
+                    else:
+                        raise SyntaxError("Integer {} is out of range 0..{}".format(value, MAXINTEGER))
 
                 # Keyword token handling
                 elif chunk in KEYWORDS:
@@ -147,7 +149,7 @@ class Tokenizer:
         
         for token in self.get_tokens():
             elem = doc.createElement(token.name)
-            text = doc.createTextToken(' {} '.format(token.value))
+            text = doc.createTextNode(' {} '.format(token.value))
             elem.appendChild(text)
             root.appendChild(elem)
         return root.toprettyxml(indent='')
