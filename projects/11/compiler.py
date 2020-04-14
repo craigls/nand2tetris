@@ -162,7 +162,7 @@ class CompilationEngine:
         if sub_type == 'method':
             self.symbols.define('this', self.class_name, 'argument')
 
-        nvars = self.compile_parameter_list()
+        nargs = self.compile_parameter_list()
 
         self.eat('{')
         while self.current.value == 'var':
@@ -194,10 +194,10 @@ class CompilationEngine:
         self.eat('}')
 
     def compile_parameter_list(self):
-        nvars = 0
+        nargs = 0
         self.eat('(')
         while self.current.value != ')':
-            nvars += 1
+            nargs += 1
             self.symbols.define(
                 kind = 'argument',
                 type_ = self.eat(),
@@ -206,7 +206,7 @@ class CompilationEngine:
             if self.current.value == ',':
                 self.eat(',')
         self.eat(')')
-        return nvars
+        return nargs
 
     def compile_var_dec(self):
         self.eat('var')
@@ -329,13 +329,13 @@ class CompilationEngine:
         self.eat(';')
         
     def compile_expression_list(self):
-        nvars = 0
+        nargs = 0
         while self.current.value != ')':
-            nvars += 1
+            nargs += 1
             self.compile_expression()
             if self.current.value == ',':
                 self.eat(',')
-        return nvars
+        return nargs 
 
     def compile_expression(self):
         self.compile_term()
@@ -393,7 +393,7 @@ class CompilationEngine:
             sub_name = self.eat() # subroutineName
             self.eat('(')
             self.write('push pointer 0') # Push this object
-            nvars = self.compile_expression_list() + 1
+            nargs = self.compile_expression_list() + 1
             self.eat(')')
 
         # ( className | varName ) '.' subroutineName
@@ -408,17 +408,17 @@ class CompilationEngine:
                 symbol = self.lookup(var_name)
                 self.write('push {} {}'.format(symbol.kind, symbol.index))
                 obj = symbol.type
-                nvars = 1 # Include "this" in nvars
+                nargs = 1 # Include "this" in nargs
 
             # Class.foo() call
             else:
-                nvars = 0 # Doesn't pass "this"
+                nargs = 0 # Doesn't pass "this"
                 obj = var_name 
 
-            nvars += self.compile_expression_list()
+            nargs += self.compile_expression_list()
             self.eat(')')
 
-        self.write('call {}.{} {}'.format(obj, sub_name, nvars))
+        self.write('call {}.{} {}'.format(obj, sub_name, nargs))
 
     def compile(self):
         self.compile_class()
