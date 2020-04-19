@@ -9,26 +9,114 @@
  * consists of 32,768 words, each holding a 16-bit binary number.
  */ 
 class Memory {
-
+    static Array ram;
+    static Array heap;
+    static int head; // points to head of linked-list (heap)
+    static int heapSize;
+    static int heapBase;
+    
     /** Initializes the class. */
     function void init() {
+        let heapBase = 2048; // Heap base
+        let heapSize = 14335; // Heap end address
+        let heap = heapBase; // Start at heap base address
+        let heap[0] = -1; // Default next pointer
+        let heap[1] = 14335; // free space
+        let head = heap[0]; // points to beginning of linked list
+        let ram = 0; // pointer to RAM
+        return;
     }
 
     /** Returns the RAM value at the given address. */
     function int peek(int address) {
+        return ram[address];
     }
 
     /** Sets the RAM value at the given address to the given value. */
     function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
     }
 
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
+
     function int alloc(int size) {
+        var int size, prev, next, curr, free, tmp;
+        /* alloc uses the heap array to create a series of memory blocks via a linked list
+         * Each block is has the following structure:
+         *  block[0] = address of next block
+         *  block[1] = size of current block
+         *  block[2..size] = usable memory space
+         */
+        
+        let curr = head;
+        let prev = -1;
+        
+        // Use first-fit to find the next available memory segment
+        while (true) {
+            let next = heap[curr];
+            let free = heap[curr + 1];
+            
+            // Check if there's enough space
+            if (~(free < (size + 2))) { 
+                let tmp = free - size;
+                let heap[curr + 1] = tmp; // Update with new size
+
+                // No space left in block after allocation
+                if (tmp = 0) { 
+
+                    // Update prev reference to the block if required
+                    if ((prev > -1) & (next > -1)) {
+                        let heap[prev] = next;
+                    }
+
+                    // Re-point head if required
+                    if (curr = head) {
+                        let head = next;
+                    }
+
+                }
+                // Set current block
+                let curr = curr + tmp;
+
+                // set memory to undefined (is this needed or handled by compiler?)
+                while (tmp < size) {
+                    let heap[curr + tmp] = -1;
+                }
+
+                // Return starting address to caller
+                return curr + 2;
+            }
+            else { 
+                if (next = -1) {
+                    do Sys.error("Cannot alloc: Out of memory!");
+                    do Sys.halt();        
+                }
+            }
+            let prev = curr;
+
+            // Next block
+            let curr = heap[next];
+            
+        }
+        return;
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
+        var int curr;
+
+        // Add object to head of the list
+        let curr = o[-2]; // o[-2] = next, o[-1] = size,
+    
+        // Re-point head
+        let heap[curr] = head;
+
+        // Set size
+        let head = curr; // Size stored at o[-1]
+    
+        return;
     }    
 }
