@@ -21,7 +21,7 @@ class Memory {
         let heapSize = 14335; // Heap end address
         let heap = heapBase; // Start at heap base address
         let heap[0] = -1; // Default next pointer
-        let heap[1] = 14335; // free space
+        let heap[1] = heapSize; // free space
         let head = heap[0]; // points to beginning of linked list
         let ram = 0; // pointer to RAM
         return;
@@ -80,18 +80,12 @@ class Memory {
                 // Set current block
                 let curr = curr + tmp;
 
-                // set memory to undefined (is this needed or handled by compiler?)
-                while (tmp < size) {
-                    let heap[curr + tmp] = -1;
-                }
-
                 // Return starting address to caller
                 return curr + 2;
             }
             else { 
                 if (next = -1) {
-                    do Sys.error("Cannot alloc: Out of memory!");
-                    do Sys.halt();        
+                    do Sys.error(6);
                 }
             }
             let prev = curr;
