@@ -44,7 +44,7 @@ class Memory {
     function int alloc(int size) {
         var int size, prev, next, curr, free, tmp;
         /* alloc uses the heap array to create a series of memory blocks via a linked list
-         * Each block is has the following structure:
+         * Each block has the following structure:
          *  block[0] = address of next block
          *  block[1] = size of current block
          *  block[2..size] = usable memory space
