@@ -22,7 +22,7 @@ class Memory {
         let heap = heapBase; // Start at heap base address
         let heap[0] = -1; // Default next pointer
         let heap[1] = heapSize; // free space
-        let head = heap[0]; // points to beginning of linked list
+        let head = 0; // points to beginning of linked list
         let ram = 0; // pointer to RAM
         return;
     }
@@ -44,17 +44,19 @@ class Memory {
     function int alloc(int size) {
         var int size, prev, next, curr, free, tmp;
         /* alloc uses the heap array to create a series of memory blocks via a linked list
-         * Each block is has the following structure:
+         * Each block has the following structure:
          *  block[0] = address of next block
          *  block[1] = size of current block
          *  block[2..size] = usable memory space
          */
-        
-        let curr = head;
+        let next = head;
+        let curr = -1;
         let prev = -1;
         
         // Use first-fit to find the next available memory segment
-        while (true) {
+        while (next > -1) {
+            let prev = curr;
+            let curr = next;
             let next = heap[curr];
             let free = heap[curr + 1];
             
@@ -77,22 +79,9 @@ class Memory {
                     }
 
                 }
-                // Set current block
-                let curr = curr + tmp;
-
                 // Return starting address to caller
-                return curr + 2;
+                return heap[curr] + 2 + tmp;
             }
-            else { 
-                if (next = -1) {
-                    do Sys.error(6);
-                }
-            }
-            let prev = curr;
-
-            // Next block
-            let curr = heap[next];
-            
         }
         return;
     }
