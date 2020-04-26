@@ -90,7 +90,7 @@ class String {
 
     /** Returns the backspace character. */
     function char backSpace() {
-        // Hack computer standard says use 129 for backspace
+        // Hack computer standard says use 129 for newline
         return 129;
     }
 
