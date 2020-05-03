@@ -5,39 +5,242 @@
 
 /**
  * A library of functions for displaying graphics on the screen.
- * The Hack physical screen consists of 512 rows (indexed 0..511, top to bottom)
- * of 256 pixels each (indexed 0..255, left to right). The top left pixel on 
+ * The Hack physical screen consists of 256 rows (indexed 0..255, top to bottom)
+ * of 512 pixels each (indexed 0..511, left to right). The top left pixel on 
  * the screen is indexed (0,0).
  */
+
+
 class Screen {
+    static boolean color;
+    static int baseAddress;
+    static Array twoToThe;
 
     /** Initializes the Screen. */
     function void init() {
+        let baseAddress = 16384;
+        let color = true;
+        let twoToThe = Array.new(16);
+        let twoToThe[0] = 1;
+        let twoToThe[1] = 2;
+        let twoToThe[2] = 4;
+        let twoToThe[3] = 8;
+        let twoToThe[4] = 16;
+        let twoToThe[5] = 32;
+        let twoToThe[6] = 64;
+        let twoToThe[7] = 128;
+        let twoToThe[8] = 256;
+        let twoToThe[9] = 512;
+        let twoToThe[10] = 1024;
+        let twoToThe[11] = 2048;
+        let twoToThe[12] = 4096;
+        let twoToThe[13] = 8192;
+        let twoToThe[14] = 16384;
+        let twoToThe[15] = 16384+16384;
+
+        return;
     }
 
     /** Erases the entire screen. */
     function void clearScreen() {
+        var boolean origColor;
+        let origColor = color;
+        do Screen.setColor(false);
+        do Screen.drawRectangle(0, 0, 511, 255);
+        do Screen.setColor(origColor);
+        return;
     }
 
     /** Sets the current color, to be used for all subsequent drawXXX commands.
      *  Black is represented by true, white by false. */
     function void setColor(boolean b) {
+        let color = b;
+        return;
     }
 
     /** Draws the (x,y) pixel, using the current color. */
     function void drawPixel(int x, int y) {
-    }
+        var int address, value, pixel;
 
-    /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
+        if ((x > 511) | (y > 255)) {
+            do Sys.error(7);
+        }
+            
+        let address = baseAddress + (32 * y) + (x / 16);
+        let value = Memory.peek(address);
+        let pixel = twoToThe[x - ((x / 16) * 16)];
+
+        // pixel on
+        if (color) {
+            let value = value | pixel; 
+        }
+        // pixel off
+        else { 
+            let value = value & ~pixel;
+        }
+        do Memory.poke(address, value);
+        return;
+    }
     function void drawLine(int x1, int y1, int x2, int y2) {
+        var int a, b, diff, dx, dy;
+        let a = 0;
+        let a = 0;
+        let b = 0;
+        let diff = 0;
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+
+        // Single pixel 
+        if ((x1 = x2) & (y1 = y2)) {
+            do Screen.drawPixel(x1, y1);
+            return;
+        }
+
+        // Straight horizontal line
+        if (x1 = x2) {
+            // DOWN
+            if (y1 < y2) {
+                while (y1 < (y2 + 1)) {
+                    do Screen.drawPixel(x1, y1);
+                    let y1 = y1 + 1;
+                }
+            }
+            // UP
+            else {
+                while (y2 < (y1 + 1)) {
+                    do Screen.drawPixel(x1, y2);
+                    let y2 = y2 + 1;
+                }
+            }
+            return;
+        }
+
+        // Straight vertical line
+        if (y1 = y2) {
+            // RIGHT
+            if (x1 < x2) {
+                while (x1 < (x2 + 1)) {
+                    do Screen.drawPixel(x1, y1);
+                    let x1 = x1 + 1;
+                }
+            }
+            // LEFT
+            else { 
+                while (x2 < (x1 + 1)) {
+                    do Screen.drawPixel(x2, y1);
+                    let x2 = x2 + 1;
+                }
+            }
+            return;
+        }
+
+        // RIGHT+DOWN
+        if ((x1 < (x2 + 1)) & (y1 < (y2 + 1))) {
+            while ((a < (dx + 1)) & (b < (dy + 1))) {
+                do Screen.drawPixel(x1 + a, y1 + b);
+                if (diff < 0) {
+                    let a = a + 1;
+                    let diff = diff + Math.abs(dy);
+                }
+                else { 
+                    let b = b + 1;
+                    let diff = diff - Math.abs(dx);
+                }
+            }
+            return;
+        }
+
+        // RIGHT+UP
+        if ((x1 < (x2 + 1)) & (y1 > y2)) {
+            while ((a < (dx + 1)) & (b > dy)) {
+                do Screen.drawPixel(x1 + a, y1 + b);
+                if (diff < 0) {
+                    let a = a + 1;
+                    let diff = diff + Math.abs(dy);
+                }
+                else { 
+                    let b = b - 1;
+                    let diff = diff - Math.abs(dx);
+                }
+            }
+            return;
+        }
+
+        // LEFT+DOWN
+        if ((x1 > x2) & (y1 < (y2 + 1))) {
+            while ((a > dx) & (b < (dy + 1))) {
+                do Screen.drawPixel(x1 + a, y1 + b);
+                if (diff < 0) {
+                    let a = a - 1;
+                    let diff = diff + Math.abs(dy);
+                }
+                else { 
+                    let b = b + 1;
+                    let diff = diff - Math.abs(dx);
+                }
+            }
+            return;
+        }
+        // LEFT+UP
+        if ((x1 > x2) & (y1 > y2)) {
+            while ((a > dx) & (b > dy)) {
+                do Screen.drawPixel(x1 + a, y1 + b);
+                if (diff < 0) {
+                    let a = a - 1;
+                    let diff = diff + Math.abs(dy);
+                }
+                else { 
+                    let b = b - 1;
+                    let diff = diff - Math.abs(dx);
+                }
+            }
+            return;
+        }
+        // If we make it here, there's a bug in the above if statements
+        do Output.printString("Bug detected in drawLine! x:");
+        do Output.printInt(x1);
+        do Output.printString(" ");
+        do Output.printInt(x2);
+        do Output.printString(" y:");
+        do Output.printInt(y1);
+        do Output.printString(" ");
+        do Output.printInt(y2);
+        do Output.println();
+        return;
     }
 
     /** Draws a filled rectangle whose top left corner is (x1, y1)
      * and bottom right corner is (x2,y2), using the current color. */
     function void drawRectangle(int x1, int y1, int x2, int y2) {
+        var int a, b;
+        let b = y1;
+        while (b < (y2 + 1)) {
+            let a = x1;
+            while (a < (x2 + 1)) {
+                do Screen.drawPixel(a, b);
+                let a = a + 1;
+            }
+            let b = b + 1;
+        }
+        return;
     }
 
     /** Draws a filled circle of radius r<=181 around (x,y), using the current color. */
     function void drawCircle(int x, int y, int r) {
+        var int dy, a;
+        let dy = -r;
+
+        // Avoid overflow
+        if (r = 181) {
+            return;
+        }
+        while (~(dy > r)) {
+            let a = Math.sqrt((r * r) - (dy * dy));
+            do Screen.drawLine(x - a, y + dy, x + a, y + dy);
+            let dy = dy + 1;
+
+        }
+        return;
+            
     }
 }
