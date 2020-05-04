@@ -106,13 +106,13 @@ class String {
 
     /** Returns the new line character. */
     function char newLine() {
-        // Hack computer standard says use 128 for backspace
+        // Hack computer standard says use 128 for newline
         return 128;
     }
 
     /** Returns the backspace character. */
     function char backSpace() {
-        // Hack computer standard says use 129 for newline
+        // Hack computer standard says use 129 for backspace
         return 129;
     }
 
@@ -124,7 +124,6 @@ class String {
 
     method String int2String(int val) {
         var int c;
-        var String tmp;
         let c = val - (val / 10 * 10); // val % 10 equivalent
 
         if (val < 10) {

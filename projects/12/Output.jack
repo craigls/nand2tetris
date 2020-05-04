@@ -18,9 +18,29 @@ class Output {
 
     // Character map for displaying characters
     static Array charMaps; 
+    static int numRows;
+    static int numChars;
+    static int charHeight;
+    static int charWidth;
+    static int curChar;
+    static int curRow;
+    static int curX;
+    static int curY;
+    static Array twoToThe;
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
+        let numRows = 23;
+        let numChars = 64;
+        let charHeight = 11;
+        let charWidth = 8;
+        let curChar = 0;
+        let curRow = 0;
+        let curX = 0;
+        let curY = 0;
+
+        do Output.initMap();
+        return;
     }
 
     // Initializes the character map array
@@ -71,7 +91,7 @@ class Output {
         do Output.create(64,30,51,51,59,59,59,27,3,30,0,0);  // @
         do Output.create(63,30,51,51,24,12,12,0,12,12,0,0);  // ?
 
-        do Output.create(65,0,0,0,0,0,0,0,0,0,0,0);          // A ** TO BE FILLED **
+        do Output.create(65,12,30,51,51,63,51,51,51,51,0,0); // A
         do Output.create(66,31,51,51,51,31,51,51,51,31,0,0); // B
         do Output.create(67,28,54,35,3,3,3,35,54,28,0,0);    // C
         do Output.create(68,15,27,51,51,51,51,51,27,15,0,0); // D
@@ -173,31 +193,84 @@ class Output {
         return charMaps[c];
     }
 
-    /** Moves the cursor to the j-th column of the i-th row,
-     *  and erases the character displayed there. */
-    function void moveCursor(int i, int j) {
-    }
-
     /** Displays the given character at the cursor location,
      *  and advances the cursor one column forward. */
     function void printChar(char c) {
+        var int i, j, bit;
+        var Array pixels;
+        let pixels = Output.getMap(c);
+        let i = 0;
+        while (i < charHeight) {
+            let j = 0;
+            while (j < charWidth) {
+                do Screen.setColor(Math.bit(pixels[i], j));
+                // TODO: Replace drawPixel with Memory peek/poke (optimization)
+                do Screen.drawPixel(curX + j, curY + i);
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        do Output.moveCursor(curRow, curChar + 1);
+        return;
     }
 
     /** displays the given string starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printString(String s) {
+        var int i;
+        let i = 0;
+        while (i < s.length()) {
+            do Output.printChar(s.charAt(i));
+            let i = i + 1;
+        }
+        return;
+    }
+
+    /** Moves the cursor to the j-th column of the i-th row,
+     *  and erases the character displayed there. */
+    function void moveCursor(int i, int j) {
+        if (i < 0) {
+            let i = 0;
+        }
+        if (j < 0) {
+            let j = 0;
+        }
+        if (j > (numChars - 1)) {
+            let j = 0;
+            let i = i + 1;
+        }
+        if (i > (numRows - 1)) {
+            let i = 0;
+        }
+
+        let curChar = j;
+        let curRow = i;
+        let curX = curChar * charWidth; 
+        let curY = curRow * charHeight;
+        do Screen.setColor(false);
+        do Screen.drawRectangle(curX, curY, curX + charWidth - 1, curY + charHeight - 1);
+        return;
     }
 
     /** Displays the given integer starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printInt(int i) {
+        var String s;
+        let s = String.new(16);
+        do s.setInt(i);
+        do Output.printString(s);
+        return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
+        do Output.moveCursor(curRow + 1, 0);
+        return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
+        do Output.moveCursor(curRow, curChar - 1);
+        return;
     }
 }

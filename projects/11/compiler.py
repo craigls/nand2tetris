@@ -1,5 +1,11 @@
 """
 Jack language compiler
+
+TODOS:
+
+- Add the exact line/column numbers when compilation errors are raised
+- Raise an error when static function called without classname (ex. foo() vs Class.foo())
+- Implement more descriptive error messages in general
 """
 
 import sys

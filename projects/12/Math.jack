@@ -38,7 +38,7 @@ class Math {
     }
 
     /* Returns 1 if i-th bit of (x) is set, else 0 */
-    function int bits(int x, int i) {
+    function int bit(int x, int i) {
         return (~(x & twoToThe[i] = 0));
     }
 
@@ -61,7 +61,7 @@ class Math {
         let sum = 0;
         let shiftedX = x;
         while (i < numberOfBits) {
-            if (Math.bits(y, i)) {
+            if (Math.bit(y, i)) {
                 let sum = sum + shiftedX;
             }
             let shiftedX = shiftedX + shiftedX;
