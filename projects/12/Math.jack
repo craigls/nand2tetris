@@ -84,14 +84,13 @@ class Math {
         if (absY > absX | y < 0) {
             return 0;  
         }
+        let q = Math.divide(absX, absY + absY);
 
-        let q = Math.divide(absX, 2 * absY);
-
-        if (absX - (2 * q * absY) < absY) {
-            let q = 2 * q;
+        if (absX - ((q + q) * absY) < absY) {
+            let q = q + q;
         }
         else {
-            let q = (2 * q) + 1;
+            let q = q + q + 1;
         }
         if (x < 0) {
             return -q;

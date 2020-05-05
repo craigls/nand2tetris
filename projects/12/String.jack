@@ -98,7 +98,7 @@ class String {
         let length = 0;
         if (val < 0) {
             let val = Math.abs(val);
-            do this.appendChar(45); // Add "-" character   
+            do appendChar(45); // Add "-" character   
         }
         do int2String(val);
         return;
@@ -122,17 +122,19 @@ class String {
         return 34;
     }
 
-    method String int2String(int val) {
+    method void int2String(int val) {
         var int c;
+
         let c = val - (val / 10 * 10); // val % 10 equivalent
 
         if (val < 10) {
-            return this.appendChar(c + 48);
+            do appendChar(c + 48);
         }
         else { 
             do int2String(val / 10);
-            return this.appendChar(c + 48);
+            do appendChar(c + 48);
         }
+        return;
     }
 
     function boolean isDigit(char c) {

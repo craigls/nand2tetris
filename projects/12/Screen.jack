@@ -43,11 +43,13 @@ class Screen {
 
     /** Erases the entire screen. */
     function void clearScreen() {
-        var boolean origColor;
-        let origColor = color;
-        do Screen.setColor(false);
-        do Screen.drawRectangle(0, 0, 511, 255);
-        do Screen.setColor(origColor);
+        var int endAddress, a;
+        let endAddress = baseAddress + 8192;
+        let a = baseAddress;
+        while (~(a > endAddress)) {
+            do Memory.poke(a, 0);
+            let a = a + 1;
+        }
         return;
     }
 
@@ -82,6 +84,7 @@ class Screen {
         return;
     }
     function void drawLine(int x1, int y1, int x2, int y2) {
+        // Disclaimer: This code isn't going to win any awards
         var int a, b, diff, dx, dy;
         let a = 0;
         let a = 0;

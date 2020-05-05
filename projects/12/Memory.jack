@@ -42,7 +42,7 @@ class Memory {
      *  a reference to its base address. */
 
     function int alloc(int size) {
-        var int size, prev, next, curr, free, tmp;
+        var int prev, next, curr, free, tmp;
         /* alloc uses the heap array to create a series of memory blocks via a linked list
          * Each block has the following structure:
          *  block[0] = address of next block
@@ -83,7 +83,7 @@ class Memory {
                 return heap[curr] + 2 + tmp;
             }
         }
-        return;
+        return -1;
     }
 
     /** De-allocates the given object (cast as an array) by making

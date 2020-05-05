@@ -5,7 +5,11 @@ TODOS:
 
 - Add the exact line/column numbers when compilation errors are raised
 - Raise an error when static function called without classname (ex. foo() vs Class.foo())
+- Raise an error when local variable names conflict with function arguments
 - Implement more descriptive error messages in general
+
+Building a more robust compiler could save a lot of time!
+
 """
 
 import sys
